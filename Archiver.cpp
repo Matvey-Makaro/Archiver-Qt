@@ -18,12 +18,12 @@ int Archiver::inCompressFile(std::string& fileName, std::string& outputFileName)
         return 0; // 0 - ошибка
     }
     calculateFreq(file);
-    //for (int i = 0; i < frequency.size(); ++i)	//удалить
-    //	if (frequency[i] != 0)
-    //		std::cout << (char)i << " " << frequency[i] << std::endl;
+    for (unsigned int i = 0; i < frequency.size(); ++i)	//удалить
+        if (frequency[i] != 0)
+            std::cout << (char)i << " " << frequency[i] << std::endl;
 
-    short numUnicChar = createHuffTree();
-    short serviceInfSize = numUnicChar * servInfSizeOfOneChar + 4;	//+4 это две short переменный в начале и концк файла
+    unsigned short numUnicChar = createHuffTree();
+    unsigned short serviceInfSize = numUnicChar * servInfSizeOfOneChar + 4;	//+4 это две short переменный в начале и конце файла
     createHuffTable();
 
     std::ofstream zipFile(outputFileName, std::ios::binary | std::ios::trunc);
@@ -159,17 +159,15 @@ void Archiver::calculateFreq(std::ifstream& file)
     for (long long int i = 0; i < fileSize; ++i)
     {
         file.read((char*)&tmp, sizeof(tmp));
-        //std::cout << tmp;
         ++frequency[tmp];
     }
-    std::cout << std::endl;
 }
 
 
 short Archiver::createHuffTree()
 {
     short counter = 0;
-    for (int i = 0; i < frequency.size(); ++i)
+    for (unsigned int i = 0; i < frequency.size(); ++i)
         if (frequency[i] != 0)
         {
             huffTree.push((unsigned char)i, frequency[i]);
@@ -184,7 +182,7 @@ int Archiver::createHuffTable() { return huffTree.createHuffTable(huffTable); }
 
 void Archiver::writeServiceInf(std::ofstream& zipFile)
 {
-    for (int i = 0; i < frequency.size(); ++i)
+    for (unsigned int i = 0; i < frequency.size(); ++i)
     {
         if (frequency[i] != 0)
         {

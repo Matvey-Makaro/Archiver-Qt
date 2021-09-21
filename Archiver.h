@@ -10,7 +10,6 @@ class Archiver
 {
 public:
     Archiver();
-    Archiver(std::vector<std::string>& fileNames, std::string& path);
     int inCompressFile(std::string& fileName, std::string& outputFileName);
     int inCompressFiles(std::vector<std::string>& fileNames);
     int outCompressArchive(std::string& zipFileName, std::string& outputFileName);
