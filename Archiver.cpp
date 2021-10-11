@@ -9,13 +9,13 @@ Archiver::Archiver()
     frequency.resize(vocabularySize, 0);
 }
 
-int Archiver::inCompressFile(std::string& fileName, std::string& outputFileName)
+int Archiver::inCompressFile(std::string& fileName)
 {
     std::ifstream file(fileName, std::ios::binary | std::ios::in);
     if (!file.is_open())
     {
         std::cerr << "Error! File doesn't open!" << std::endl;
-        return 0; // 0 - ошибка
+        return Errors::FILE_DOES_NOT_OPEN;
     }
     calculateFreq(file);
     for (unsigned int i = 0; i < frequency.size(); ++i)	//удалить
@@ -23,16 +23,20 @@ int Archiver::inCompressFile(std::string& fileName, std::string& outputFileName)
             std::cout << (char)i << " " << frequency[i] << std::endl;
 
     unsigned short numUnicChar = createHuffTree();
-    unsigned short serviceInfSize = numUnicChar * servInfSizeOfOneChar + 4;	//+4 это две short переменный в начале и конце файла
+    unsigned short serviceInfSize = numUnicChar * servInfSizeOfOneChar + 2 * sizeof(short);	//две short переменный в начале и конце файла
     createHuffTable();
-
+    std::string outputFileName;
+    getZipFileName(fileName, outputFileName);
     std::ofstream zipFile(outputFileName, std::ios::binary | std::ios::trunc);
     if (!zipFile.is_open())
     {
         std::cerr << "Error! Zip file doesn't open!" << std::endl;
-        return 0; //ошибка
+        return Errors::FILE_DOES_NOT_OPEN;
     }
 
+    Errors errorCode = (Errors)writeFileExtension(zipFile, fileName);
+    if(errorCode == Errors::FILE_EXTENSION_NOT_SUPPORTED)
+        return Errors::FILE_EXTENSION_NOT_SUPPORTED;
     zipFile.write((const char*)&serviceInfSize, sizeof(serviceInfSize));
     writeServiceInf(zipFile);
     compress(file, zipFile);
@@ -42,43 +46,43 @@ int Archiver::inCompressFile(std::string& fileName, std::string& outputFileName)
     clearHuffTable();
     file.close();
     zipFile.close();
-    return 1;
+    return Errors::NO_ERRORS;
 }
 
 int Archiver::inCompressFiles(std::vector<std::string>& fileNames)
 {
     std::ifstream file;
-    for (int i = 0; i < fileNames.size(); ++i)
+    for (unsigned int i = 0; i < fileNames.size(); ++i)
     {
-        for (int j = 0; j < frequency.size(); ++j)
+        for (unsigned int j = 0; j < frequency.size(); ++j)
             frequency[j] = 0;
         calculateFreq(file);
         //обнулить таблицу частот
     }
-    //выше написан только подсчет частоты символов во всех файлах, надо дописать продолжение
-    //добавление элементов в дерево ХаФФмана
-    //добавить запись дерева Хаффмана в начало файла
     return 1;
 }
 
 
-int Archiver::outCompressArchive(std::string& zipFileName, std::string& outputFileName)
+int Archiver::outCompressArchive(std::string& zipFileName)
 {
     std::ifstream zipFile(zipFileName, std::ios::binary | std::ios::in);	//файл с заархивированными данными
     if (!zipFile.is_open())
     {
         std::cerr << "Error! Zip file doesn't open!" << std::endl;
-        return 0; //ошибка
+        return Errors::FILE_DOES_NOT_OPEN;
     }
-    short serviceInfSize, numUnicChar, numUselessBits;
+    short serviceInfSize = 0, numUnicChar = 0, numUselessBits = 0;
+    unsigned char extensionIndex = 0;
     long long int fileSize;
     zipFile.seekg(0, std::ios::end);
     fileSize = zipFile.tellg();
     zipFile.seekg(-2, std::ios::end);
     zipFile.read((char*)&numUselessBits, sizeof(numUselessBits));
     zipFile.seekg(0, std::ios::beg);
+    zipFile.read((char*)&extensionIndex, sizeof(extensionIndex));
     zipFile.read((char*)&serviceInfSize, sizeof(serviceInfSize));
-    numUnicChar = (serviceInfSize - 4) / servInfSizeOfOneChar;	//4 байта служебной информации это 2 shot переменные в начале и конце файла
+
+    numUnicChar = (serviceInfSize - 4) / servInfSizeOfOneChar;	//4 байта служебной информации это 2 shot переменные, в начале и конце файла
     long long int compressInfSize = fileSize - serviceInfSize;
     unsigned char tmpChar= 0;
     int bufferFrequency = 0;
@@ -88,13 +92,18 @@ int Archiver::outCompressArchive(std::string& zipFileName, std::string& outputFi
         zipFile.read((char*)&bufferFrequency, sizeof(bufferFrequency));
         huffTree.push(tmpChar, bufferFrequency);
     }
-    createHuffTree();
+    createHuffTree();  //исправить этот метод, он подходит для архивации, а для разархивации делает лишние пуши
+
+    std::string outputFileName;
+    Errors errorCode = (Errors)getUnzipFileName(zipFileName, extensionIndex, outputFileName);
+    if(errorCode == Errors::FILE_EXTENSION_NOT_SUPPORTED)
+        return Errors::FILE_EXTENSION_NOT_SUPPORTED;
 
     std::ofstream file(outputFileName, std::ios::trunc | std::ios::binary);
     if (!file.is_open())
     {
         std::cerr << "Error! Output file doesn't open!" << std::endl;
-        return 0; //ошибка
+        return Errors::FILE_DOES_NOT_OPEN;
     }
     Node<unsigned char>* huffTreeRoot = huffTree.getRoot();
     Node<unsigned char>* currNode = huffTreeRoot;
@@ -102,7 +111,7 @@ int Archiver::outCompressArchive(std::string& zipFileName, std::string& outputFi
     {
         unsigned char buffer = 0;
         unsigned char mask;
-        for (int i = 0; i < compressInfSize - 1; ++i)  //
+        for (int i = 0; i < compressInfSize - 1; ++i)
         {
             mask = 1 << (byteSize - 1);  //двоичный код маски 10000000, чтобы считать последний бит
             zipFile.read((char*)&buffer, sizeof(buffer));
@@ -142,7 +151,7 @@ int Archiver::outCompressArchive(std::string& zipFileName, std::string& outputFi
     clearHuffTree();
     file.close();
     zipFile.close();
-    return 1;
+    return Errors::NO_ERRORS;
 }
 
 Archiver::~Archiver() {}
@@ -179,6 +188,24 @@ short Archiver::createHuffTree()
 
 int Archiver::createHuffTable() { return huffTree.createHuffTable(huffTable); }
 
+int Archiver::writeFileExtension(std::ofstream& zipFile, std::string& zipFileName)
+{
+    std::string zipFileExtension;
+    getFileExtension(zipFileName, zipFileExtension);
+    unsigned char extensionIndex = Errors::FILE_EXTENSION_NOT_SUPPORTED;
+    for(unsigned int i = 0; i < availableExtensions.size(); ++i)
+    {
+        if(availableExtensions[i] == zipFileExtension)
+        {
+            extensionIndex = i;
+            break;
+        }
+    }
+    if(extensionIndex == Errors::FILE_EXTENSION_NOT_SUPPORTED)
+        return Errors::FILE_EXTENSION_NOT_SUPPORTED;
+    zipFile.write((const char*)&extensionIndex, sizeof(extensionIndex));
+    return Errors::NO_ERRORS;
+}
 
 void Archiver::writeServiceInf(std::ofstream& zipFile)
 {
@@ -206,7 +233,7 @@ void Archiver::compress(std::ifstream& file, std::ofstream& zipFile)
     {
         file.read((char*)&buffer, sizeof(buffer));
         newCode = huffTable[buffer];
-        for (int j = 0; j < newCode.size(); ++j)
+        for (unsigned int j = 0; j < newCode.size(); ++j)
         {
             if (newCode[j] == '1')
                 newChar |= 1;
@@ -230,15 +257,40 @@ void Archiver::compress(std::ifstream& file, std::ofstream& zipFile)
     zipFile.write((const char*)&numUselessBits, sizeof(numUselessBits));  //записываем в конец файла кол-во не значимых бит в последнем символе
 }
 
+void Archiver::getFileExtension(std::string& fileName, std::string& outExtension)
+{
+    int pos = fileName.find_last_of(".");
+    outExtension = fileName.substr(pos);
+}
+
+int Archiver::getZipFileName(std::string& fileName, std::string& zipFileName)
+{
+    zipFileName = fileName;
+    zipFileName.erase(zipFileName.find_last_of("."));
+    zipFileName.append(".txt");
+    return Errors::NO_ERRORS;
+}
+
+int Archiver::getUnzipFileName(std::string& zipFileName, unsigned char extensionIndex, std::string& outUnzipFileName)
+{
+    if(extensionIndex >= availableExtensions.size())
+        return Errors::FILE_EXTENSION_NOT_SUPPORTED;
+    outUnzipFileName = zipFileName;
+    outUnzipFileName.erase(outUnzipFileName.find_last_of("."));
+    outUnzipFileName.append(availableExtensions[extensionIndex]);
+    return Errors::NO_ERRORS;
+}
+
 void Archiver::clearFrequency()
 {
-    for (int i = 0; i < frequency.size(); ++i)
+    for (unsigned int i = 0; i < frequency.size(); ++i)
         frequency[i] = 0;
 }
 
 void Archiver::clearHuffTree() { huffTree.clear(); }
+
 void Archiver::clearHuffTable()
 {
-    for (int i = 0; i < huffTable.size(); ++i)
+    for (unsigned int i = 0; i < huffTable.size(); ++i)
         huffTable[i] = "";
 }

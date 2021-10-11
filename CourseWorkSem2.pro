@@ -18,7 +18,6 @@ SOURCES += \
 HEADERS += \
     Archiver.h \
     ArchiverUI.h \
-    ArchiverWidget.h \
     HuffmansTree.h \
     Node.h \
     PriorityQueueNode.h \

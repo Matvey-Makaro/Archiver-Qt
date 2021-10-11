@@ -25,13 +25,11 @@ void ArchiverUI::initUI()
 void ArchiverUI::zip()
 {
     std::string fileName = QFileDialog::getOpenFileName(this, "Choose file to zip", "", "*.pdf *.txt *.docx *.mp4").toStdString();
-    std::string zipFileName = "zipFile.txt";
-    archiver->inCompressFile(fileName, zipFileName);
+    archiver->inCompressFile(fileName);
 }
 
 void ArchiverUI::unzip()
 {
     std::string fileName = QFileDialog::getOpenFileName(this, "Choose file to unzip", "", "*.pdf *.txt *.docx *mp4").toStdString();
-    std::string zipFileName = "TestUnZipmp4.mp4";
-    archiver->outCompressArchive(fileName, zipFileName);
+    archiver->outCompressArchive(fileName);
 }
