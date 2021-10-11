@@ -1,4 +1,0 @@
-#ifndef ARCHIVERWIDGET_H
-#define ARCHIVERWIDGET_H
-
-#endif // ARCHIVERWIDGET_H

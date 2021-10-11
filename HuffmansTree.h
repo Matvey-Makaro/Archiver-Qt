@@ -15,7 +15,6 @@ public:
     int createHuffTable(std::vector<std::string>& huffTable);
     void push(unsigned char value, int priority);
     Node<unsigned char>* getRoot();
-    //void unzip(std::fstream& zipFile, std::fstream& outputFile); //скорее всего удалить
     int size() const;
     bool isLeaf(Node<unsigned char>* node) const;
     void clear(); //очистить выделенную память

@@ -4,7 +4,6 @@
 HuffmansTree::HuffmansTree() :
     root(nullptr), numNodes(0) {}
 
-
 void HuffmansTree::create()
 {
     if (queue.empty())
@@ -28,7 +27,6 @@ void HuffmansTree::create()
     root = queue.top().data;
     queue.pop();
 }
-
 
 int HuffmansTree::createHuffTable(std::vector<std::string>& huffTable)
 {
@@ -55,8 +53,6 @@ int HuffmansTree::createHuffTable(std::vector<std::string>& huffTable)
     return 0;
 }
 
-
-
 void HuffmansTree::push(unsigned char value, int priority)
 {
     PriorityQueueNode<Node<unsigned char>*> buffer;
@@ -70,11 +66,10 @@ void HuffmansTree::push(unsigned char value, int priority)
     ++numNodes;
 }
 
-
-
 Node<unsigned char>* HuffmansTree::getRoot() { return root; }
 
 int HuffmansTree::size() const { return numNodes; }
+
 bool HuffmansTree::isLeaf(Node<unsigned char>* node) const
 {
     if (node == nullptr)
@@ -93,9 +88,7 @@ void HuffmansTree::clear()
     }
 }
 
-
 HuffmansTree::~HuffmansTree() { clear(); }
-
 
 Node<unsigned char>* HuffmansTree::deleteTree(Node<unsigned char>* tmpNode)
 {
