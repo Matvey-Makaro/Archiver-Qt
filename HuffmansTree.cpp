@@ -42,11 +42,11 @@ int HuffmansTree::createHuffTable(std::vector<std::string>& huffTable)
         else
         {
             fillHuffTable(root, code, huffTable);
-            for (short i = 0; i < huffTable.size(); ++i)	//для отладки, выводит новые коды для символов
-            {
-                if (!huffTable[i].empty())
-                    std::cout << (unsigned char)i << " " << huffTable[i] << std::endl;
-            }
+//            for (short i = 0; i < huffTable.size(); ++i)	//для отладки, выводит новые коды для символов
+//            {
+//                if (!huffTable[i].empty())
+//                    std::cout << (unsigned char)i << " " << huffTable[i] << std::endl;
+//            }
             return 1;
         }
     }
@@ -86,6 +86,7 @@ void HuffmansTree::clear()
         deleteTree(tmpRoot);
         root = nullptr;
     }
+    numNodes = 0;
 }
 
 HuffmansTree::~HuffmansTree() { clear(); }

@@ -12,19 +12,16 @@ SOURCES += \
     Archiver.cpp \
     ArchiverUI.cpp \
     HuffmansTree.cpp \
-    main.cpp \
-    mainwindow.cpp
+    main.cpp
 
 HEADERS += \
     Archiver.h \
     ArchiverUI.h \
     HuffmansTree.h \
     Node.h \
-    PriorityQueueNode.h \
-    mainwindow.h
+    PriorityQueueNode.h
 
-FORMS += \
-    mainwindow.ui
+FORMS +=
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

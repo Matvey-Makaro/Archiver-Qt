@@ -17,8 +17,8 @@ public:
     Node<unsigned char>* getRoot();
     int size() const;
     bool isLeaf(Node<unsigned char>* node) const;
-    void clear(); //очистить выделенную память
-    ~HuffmansTree(); //очистить выделенную память
+    void clear();
+    ~HuffmansTree();
 private:
     Node<unsigned char>* root;
     std::priority_queue<PriorityQueueNode<Node<unsigned char>*>, std::vector<PriorityQueueNode<Node<unsigned char>*>>, std::greater<PriorityQueueNode<Node<unsigned char>*>>> queue;

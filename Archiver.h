@@ -11,7 +11,6 @@ class Archiver
 public:
     Archiver();
     int inCompressFile(std::string& fileName);
-    int inCompressFiles(std::vector<std::string>& fileNames);
     int outCompressArchive(std::string& zipFileName);
     ~Archiver();
 
@@ -29,19 +28,19 @@ private:
     static constexpr int servInfSizeOfOneChar = sizeof(char) + sizeof(int);  // служебная информация - символ + его частота
     static constexpr int byteSize = sizeof(char) * 8;  //размер байта в битах
     HuffmansTree huffTree;
-    std::vector<int> frequency;   //не забыть обнулять этот вектор
+    std::vector<int> frequency;
     std::vector<std::string> huffTable;
     std::vector<std::string> availableExtensions = {".txt", ".pdf", ".doc", ".docx", ".mp4"};
 
 private:
     void calculateFreq(std::ifstream&);
-    short createHuffTree();
+    void createHuffTree();
     int createHuffTable();
     int writeFileExtension(std::ofstream& zipFile, std::string& zipFileName);
     void writeServiceInf(std::ofstream&);
     void compress(std::ifstream&, std::ofstream&);
     void getFileExtension(std::string& fileName, std::string& outExtension);
-    int getZipFileName(std::string& fileName, std::string& zipFileName);
+    int getZipFileName(std::string& fileName, std::string& outZipFileName);
     int getUnzipFileName(std::string& zipFileName, unsigned char extensionIndex, std::string& outUnzipFileName);
     void clearFrequency();
     void clearHuffTree();

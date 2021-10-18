@@ -1,6 +1,6 @@
 #include"Archiver.h"
 #include<fstream>
-#include<iostream>
+#include<QDebug>
 
 
 Archiver::Archiver()
@@ -14,15 +14,23 @@ int Archiver::inCompressFile(std::string& fileName)
     std::ifstream file(fileName, std::ios::binary | std::ios::in);
     if (!file.is_open())
     {
-        std::cerr << "Error! File doesn't open!" << std::endl;
+        //qDebug() << "Error! File doesn't open!";
         return Errors::FILE_DOES_NOT_OPEN;
     }
     calculateFreq(file);
-    for (unsigned int i = 0; i < frequency.size(); ++i)	//удалить
-        if (frequency[i] != 0)
-            std::cout << (char)i << " " << frequency[i] << std::endl;
 
-    unsigned short numUnicChar = createHuffTree();
+//    for (unsigned int i = 0; i < frequency.size(); ++i)
+//        if (frequency[i] != 0)
+//            qDebug() << (char)i << " " << frequency[i];
+
+    unsigned short numUnicChar = 0;
+    for (unsigned int i = 0; i < frequency.size(); ++i)
+        if (frequency[i] != 0)
+        {
+            huffTree.push((unsigned char)i, frequency[i]);
+            ++numUnicChar;
+        }
+    createHuffTree();
     unsigned short serviceInfSize = numUnicChar * servInfSizeOfOneChar + 2 * sizeof(short);	//две short переменный в начале и конце файла
     createHuffTable();
     std::string outputFileName;
@@ -30,7 +38,7 @@ int Archiver::inCompressFile(std::string& fileName)
     std::ofstream zipFile(outputFileName, std::ios::binary | std::ios::trunc);
     if (!zipFile.is_open())
     {
-        std::cerr << "Error! Zip file doesn't open!" << std::endl;
+        //qDebug() << "Error! Zip file doesn't open!";
         return Errors::FILE_DOES_NOT_OPEN;
     }
 
@@ -49,26 +57,12 @@ int Archiver::inCompressFile(std::string& fileName)
     return Errors::NO_ERRORS;
 }
 
-int Archiver::inCompressFiles(std::vector<std::string>& fileNames)
-{
-    std::ifstream file;
-    for (unsigned int i = 0; i < fileNames.size(); ++i)
-    {
-        for (unsigned int j = 0; j < frequency.size(); ++j)
-            frequency[j] = 0;
-        calculateFreq(file);
-        //обнулить таблицу частот
-    }
-    return 1;
-}
-
-
 int Archiver::outCompressArchive(std::string& zipFileName)
 {
     std::ifstream zipFile(zipFileName, std::ios::binary | std::ios::in);	//файл с заархивированными данными
     if (!zipFile.is_open())
     {
-        std::cerr << "Error! Zip file doesn't open!" << std::endl;
+        //qDebug() << "Error! Zip file doesn't open!";
         return Errors::FILE_DOES_NOT_OPEN;
     }
     short serviceInfSize = 0, numUnicChar = 0, numUselessBits = 0;
@@ -92,17 +86,17 @@ int Archiver::outCompressArchive(std::string& zipFileName)
         zipFile.read((char*)&bufferFrequency, sizeof(bufferFrequency));
         huffTree.push(tmpChar, bufferFrequency);
     }
-    createHuffTree();  //исправить этот метод, он подходит для архивации, а для разархивации делает лишние пуши
+    createHuffTree();
 
-    std::string outputFileName;
-    Errors errorCode = (Errors)getUnzipFileName(zipFileName, extensionIndex, outputFileName);
+    std::string unzipFileName;
+    Errors errorCode = (Errors)getUnzipFileName(zipFileName, extensionIndex, unzipFileName);
     if(errorCode == Errors::FILE_EXTENSION_NOT_SUPPORTED)
         return Errors::FILE_EXTENSION_NOT_SUPPORTED;
 
-    std::ofstream file(outputFileName, std::ios::trunc | std::ios::binary);
-    if (!file.is_open())
+    std::ofstream unzipFile(unzipFileName, std::ios::trunc | std::ios::binary);
+    if (!unzipFile.is_open())
     {
-        std::cerr << "Error! Output file doesn't open!" << std::endl;
+        //qDebug() << "Error! Output file doesn't open!";
         return Errors::FILE_DOES_NOT_OPEN;
     }
     Node<unsigned char>* huffTreeRoot = huffTree.getRoot();
@@ -124,7 +118,7 @@ int Archiver::outCompressArchive(std::string& zipFileName)
 
                 if (huffTree.isLeaf(currNode))
                 {
-                    file.write((char*)&currNode->data, sizeof(currNode->data));
+                    unzipFile.write((char*)&currNode->data, sizeof(currNode->data));
                     currNode = huffTreeRoot;
                 }
                 mask >>= 1;
@@ -142,14 +136,14 @@ int Archiver::outCompressArchive(std::string& zipFileName)
 
             if (huffTree.isLeaf(currNode))
             {
-                file.write((char*)&currNode->data, sizeof(currNode->data));
+                unzipFile.write((char*)&currNode->data, sizeof(currNode->data));
                 currNode = huffTreeRoot;
             }
             mask >>= 1;
         }
     }
     clearHuffTree();
-    file.close();
+    unzipFile.close();
     zipFile.close();
     return Errors::NO_ERRORS;
 }
@@ -173,17 +167,9 @@ void Archiver::calculateFreq(std::ifstream& file)
 }
 
 
-short Archiver::createHuffTree()
+void Archiver::createHuffTree()
 {
-    short counter = 0;
-    for (unsigned int i = 0; i < frequency.size(); ++i)
-        if (frequency[i] != 0)
-        {
-            huffTree.push((unsigned char)i, frequency[i]);
-            ++counter;
-        }
-    huffTree.create();
-    return counter;
+    huffTree.create(); 
 }
 
 int Archiver::createHuffTable() { return huffTree.createHuffTable(huffTable); }
@@ -257,10 +243,10 @@ void Archiver::compress(std::ifstream& file, std::ofstream& zipFile)
     zipFile.write((const char*)&numUselessBits, sizeof(numUselessBits));  //записываем в конец файла кол-во не значимых бит в последнем символе
 }
 
-void Archiver::getFileExtension(std::string& fileName, std::string& outExtension)
+void Archiver::getFileExtension(std::string& fileName, std::string& extension)
 {
     int pos = fileName.find_last_of(".");
-    outExtension = fileName.substr(pos);
+    extension = fileName.substr(pos);
 }
 
 int Archiver::getZipFileName(std::string& fileName, std::string& zipFileName)
